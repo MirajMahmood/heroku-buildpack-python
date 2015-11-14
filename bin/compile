@@ -4,6 +4,23 @@
 #
 #     $ bin/compile <build-dir> <cache-dir> <env-path>
 
+# Add JDK support - Custom by ODE, forked from heroku-buildpack-python and heroku-builpack-java
+
+curl --silent --location http://heroku-jvm-common.s3.amazonaws.com/jvm-buildpack-common.tar.gz | tar xz
+. bin/java
+
+# install JDK 
+javaVersion=$(detect_java_version ${BUILD_DIR})
+echo -n "-----> Installing OpenJDK ${javaVersion}..."
+install_java ${BUILD_DIR} ${javaVersion}
+jdk_overlay ${BUILD_DIR}
+echo " done"
+
+PROFILE_PATH="$BUILD_DIR/.profile.d/java.sh"
+mkdir -p $(dirname $PROFILE_PATH)
+echo 'export PATH="/app/.jdk/bin:$PATH"' >> $PROFILE_PATH
+echo 'export JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -Djava.rmi.server.useCodebaseOnly=true"' >> $PROFILE_PATH
+
 # Fail fast and fail hard.
 set -eo pipefail
 
@@ -227,22 +244,6 @@ bpwatch start dump_cache
 
 bpwatch stop dump_cache
 
- # Add JDK support - Custom by ODE, forked from heroku-buildpack-python and heroku-builpack-java
-
-curl --silent --location http://heroku-jvm-common.s3.amazonaws.com/jvm-buildpack-common.tar.gz | tar xz
-. bin/java
-
-# install JDK 
-javaVersion=$(detect_java_version ${BUILD_DIR})
-echo -n "-----> Installing OpenJDK ${javaVersion}..."
-install_java ${BUILD_DIR} ${javaVersion}
-jdk_overlay ${BUILD_DIR}
-echo " done"
-
-PROFILE_PATH="$BUILD_DIR/.profile.d/java.sh"
-mkdir -p $(dirname $PROFILE_PATH)
-echo 'export PATH="/app/.jdk/bin:$PATH"' >> $PROFILE_PATH
-echo 'export JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -Djava.rmi.server.useCodebaseOnly=true"' >> $PROFILE_PATH
 
 # ### Fin.
 if [[ ! "$DOCKER_BUILD" ]]; then
